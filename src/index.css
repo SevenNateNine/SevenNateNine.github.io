@@ -1,0 +1,146 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/*
+ * Dark is the default; `[data-theme='light']` re-points the same tokens.
+ * The OS preference is resolved to an explicit `data-theme` by the inline
+ * script in index.html and kept in sync by useTheme, so there is no
+ * prefers-color-scheme branch here — one palette, defined once.
+ */
+@theme {
+  --color-bg: oklch(0.17 0.023 258);
+  --color-surface: oklch(0.23 0.024 258);
+  --color-text: oklch(0.91 0.008 258);
+  --color-muted: oklch(0.68 0.017 258);
+  /* `faint` carries real text (dates, locations, nav labels) — it is tuned to
+     clear WCAG AA 4.5:1 against `bg`, not just to look quiet. */
+  --color-faint: oklch(0.6 0.02 258);
+  --color-accent: oklch(0.84 0.115 178);
+
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+:root[data-theme='light'] {
+  --color-bg: oklch(0.985 0.003 258);
+  --color-surface: oklch(0.945 0.006 258);
+  --color-text: oklch(0.26 0.021 258);
+  --color-muted: oklch(0.46 0.021 258);
+  --color-faint: oklch(0.53 0.019 258);
+  --color-accent: oklch(0.52 0.105 205);
+}
+
+html {
+  /* Opts the browser's own chrome — scrollbars, form controls, the canvas
+     painted before CSS arrives — into the active theme. */
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  /* Inter's tabular figures keep the date gutter from shifting between rows. */
+  font-feature-settings: 'cv05' 1;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/*
+ * Theme change, as a circular wipe out of the toggle button.
+ *
+ * The two snapshots are stacked rather than cross-faded: the outgoing theme
+ * holds still underneath while the incoming one is revealed through a growing
+ * circle. ThemeToggle sets the origin and radius before starting the
+ * transition; the fallbacks here keep it centered if it ever runs without them.
+ */
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* The default cross-fade would show both themes at once through the wipe. */
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 0;
+}
+
+::view-transition-new(root) {
+  z-index: 1;
+  animation: theme-reveal 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Browsers without View Transitions still get a soft crossfade of the palette. */
+@supports not (view-transition-name: none) {
+  body,
+  body * {
+    transition:
+      background-color 0.35s ease,
+      border-color 0.35s ease,
+      color 0.35s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+/* Cmd+P should produce a readable one-pager, not a screenshot of a dark theme.
+   The `[data-theme]` selector matches the specificity of the light palette
+   above, and wins on source order. */
+@media print {
+  :root,
+  :root[data-theme] {
+    --color-bg: white;
+    --color-surface: white;
+    --color-text: black;
+    --color-muted: #333;
+    --color-faint: #555;
+    --color-accent: black;
+  }
+
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.75em;
+    color: #555;
+  }
+}
